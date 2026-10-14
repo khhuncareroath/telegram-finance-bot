@@ -446,8 +446,29 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             await update.message.reply_text(f"❌ AI Error: {e}")
 
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import os
+
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is alive!")
+
+def run_web_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(('0.0.0.0', port), SimpleHandler)
+    server.serve_forever()
+
 if __name__ == '__main__':
     init_db()
+    
+    # Start dummy web server so Render web service is happy
+    t = threading.Thread(target=run_web_server)
+    t.daemon = True
+    t.start()
+    
     app = ApplicationBuilder().token(BOT_TOKEN).connect_timeout(30.0).read_timeout(30.0).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("export", export_data) if 'export_data' in globals() else CommandHandler("export", start))

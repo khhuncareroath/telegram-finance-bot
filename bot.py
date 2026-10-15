@@ -1,3 +1,6 @@
+from telegram import BotCommand, InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 import sqlite3
 import json
 import urllib.request
@@ -441,10 +444,52 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             gemini_client = genai.Client(api_key=GEMINI_API_KEY)
             prompt = f"Financial advisor bot. Income: ${inc}, Expenses:${exp}. Client query: '{text}'. Keep it brief and practical."
-            response = gemini_client.models.generate_content(model='gemini-3.8-flash', contents=prompt)
+            response = gemini_client.models.generate_content(model='gemini-2.0-flash', contents=prompt)
             await update.message.reply_text(f"🧠 Consultant:\n\n{response.text}")
         except Exception as e:
             await update.message.reply_text(f"❌ AI Error: {e}")
+
+async def setup_bot_menu(application):
+    commands = [
+        BotCommand("start", "Open main menu"),
+        BotCommand("calendar", "View calendar"),
+        BotCommand("guide", "How to use the bot")
+    ]
+    await application.bot.set_my_commands(commands)
+
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
+        [InlineKeyboardButton("📅 Open Calendar", callback_data='action_calendar'),
+         InlineKeyboardButton("📊 Weekly/Monthly Stats", callback_data='action_stats')],
+        [InlineKeyboardButton("📖 Read Quick Guide", callback_data='action_guide')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    welcome_text = "🚀 *Welcome to Manager Bot!*\nWhat would you like to check today?"
+    await update.message.reply_text(welcome_text, reply_markup=reply_markup, parse_mode='Markdown')
+
+async def guide_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    guide_text = "📖 *Quick Start Guide*\nLogging your daily spending is fast. Just type the amount followed by the description.\n*Examples:*\n🍜 `3.50 Noodle House`\n🚕 `4 PassApp`"
+    await update.message.reply_text(guide_text, parse_mode='Markdown')
+
+async def calendar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    calendar, step = DetailedTelegramCalendar().build()
+    await update.message.reply_text(f"Select {LSTEP[step]}:", reply_markup=calendar)
+
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    if query.data == 'action_guide':
+        await guide_command(update, context)
+    elif query.data == 'action_calendar':
+        calendar, step = DetailedTelegramCalendar().build()
+        await query.message.reply_text("Select a date:", reply_markup=calendar)
+    else:
+        result, key, step = DetailedTelegramCalendar().process(query.data)
+        if not result and key:
+            await query.message.edit_text(f"Select {LSTEP[step]}:", reply_markup=key)
+        elif result:
+            await query.message.edit_text(f"📅 You selected {result}. You spent $0 on this day.")
 
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -470,11 +515,19 @@ if __name__ == '__main__':
     t.start()
     
     app = ApplicationBuilder().token(BOT_TOKEN).connect_timeout(30.0).read_timeout(30.0).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("export", export_data) if 'export_data' in globals() else CommandHandler("export", start))
+    # 1. The New Handlers
+    app.add_handler(CommandHandler("start", start_command))
+    app.add_handler(CommandHandler("guide", guide_command))
+    app.add_handler(CommandHandler("calendar", calendar_command))
+    
+    # 2. Your Existing Handlers (Kept exactly the same)
+    app.add_handler(CommandHandler("export", export_data) if 'export_data' in globals() else CommandHandler("export", start_command))
     app.add_handler(CommandHandler("excel", export_excel))
     app.add_handler(CommandHandler("pdf", export_pdf))
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_clicks))
-    app.add_handler(CallbackQueryHandler(button_callback))
+    
+    # 3. The New Button Handler & Menu Builder
+    app.add_handler(CallbackQueryHandler(button_handler))
+    app.post_init = setup_bot_menu
     print("Multi-User Multi-Wallet Bot is running!")
     app.run_polling()

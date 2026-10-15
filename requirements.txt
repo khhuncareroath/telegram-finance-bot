@@ -1,5 +1,7 @@
 python-telegram-bot
-google-genai
+google-generativeai
 pandas
 openpyxl
 reportlab
+python-telegram-bot-calendar
+requests

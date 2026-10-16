@@ -45,16 +45,15 @@ def get_live_price(ticker):
     try:
         import requests 
         
-        # Translate "GOLD" to Binance's actual gold token ticker (PAXG)
+        # Translate "GOLD" to the PAXG crypto ticker
         if ticker.upper() == "GOLD":
             ticker = "PAXG"
             
-        # Automatically append USDT to the ticker (e.g., BTC becomes BTCUSDT)
-        symbol = f"{ticker.upper()}USDT"
-        url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
-        
+        # Use CryptoCompare which does not block cloud servers
+        url = f"https://min-api.cryptocompare.com/data/price?fsym={ticker.upper()}&tsyms=USD"
         response = requests.get(url).json()
-        return float(response['price'])
+        
+        return float(response['USD'])
     except Exception as e:
         print(f"Error fetching {ticker}: {e}")
         return 0
@@ -129,12 +128,31 @@ async def export_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_document(document=open(file_path, 'rb'), filename="Financial_Summary.pdf", caption="📄 Styled PDF report!")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # A clean, modern dashboard layout using Markdown formatting
+    dashboard_text = (
+        "🏦 *PORTFOLIO MANAGER* \n"
+        "━━━━━━━━━━━━━━━━━━\n\n"
+        "Welcome back. All systems operational.\n\n"
+        "📊 *Quick Snapshot*\n"
+        "• *Today:* `$0.00`\n"
+        "• *This Week:* `$0.00`\n\n"
+        "⚡ *Quick Action*\n"
+        "Type an amount and description to log it instantly.\n"
+        "_Example: `3.50 Coffee`_"
+    )
+    
+    # Modern 2x2 grid layout for your main buttons
     keyboard = [
-        ["📊 Quick Summary", "📈 Crypto & Trading"],
-        ["🎯 Savings Goals", "🧠 Consultant & Settings"]
+        ["📊 Quick Summary", "📈 Crypto Portfolio"],
+        ["🎯 Savings Goals", "⚙️ Settings & Tools"]
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    await update.message.reply_text("Welcome to your private Financial Tracker! 🚀\nJust type a number (e.g., `20`) to start logging.", reply_markup=reply_markup, parse_mode="Markdown")
+    
+    await update.message.reply_text(
+        text=dashboard_text, 
+        reply_markup=reply_markup, 
+        parse_mode='Markdown'
+    )
 
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -151,7 +169,16 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
              InlineKeyboardButton("💼 Business", callback_data=f"wal_exp_{amount}_{category}_Business")],
             [InlineKeyboardButton("🏦 Savings", callback_data=f"wal_exp_{amount}_{category}_Savings")]
         ]
-        await query.edit_message_text(f"Select Wallet for ${float(amount):.2f} ({category}):", reply_markup=InlineKeyboardMarkup(keyboard))
+        # A visually appealing receipt format using your existing variables
+        receipt_text = (
+            "🧾 *TRANSACTION LOGGED*\n"
+            "━━━━━━━━━━━━━━━━━━\n"
+            f"💵 *Amount:* `${float(amount):,.2f}`\n"
+            f"🏷️ *Category:* `{category}`\n"
+            "📅 *Date:* `Today`\n\n"
+            "Select the funding source below:"
+        )
+        await query.edit_message_text(text=receipt_text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
         
     elif data.startswith("wal_exp_"):
         parts = data.split("_")
@@ -163,7 +190,8 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         conn.cursor().execute("INSERT INTO transactions (user_id, amount, category, type, wallet) VALUES (?, ?, ?, 'expense', ?)", (user_id, amount, category, wallet))
         conn.commit()
         conn.close()
-        await query.edit_message_text(f"✅ Saved! Spent ${amount:.2f} on {category} [{wallet} Wallet].")
+        # Sleek success message for expenses
+        await query.edit_message_text(f"✅ *Success:* Logged `${float(amount):,.2f}` for {category} [*{wallet} Wallet*].", parse_mode='Markdown')
 
     elif data.startswith("inc_"):
         amount_val = data.split("_")[1]
@@ -328,6 +356,17 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Here are your active Savings Goals:\n(Goal data will go here!)")
         return
     text_lower = text.lower()
+
+# Intercept the Quick Summary button
+    if text == "📊 Quick Summary":
+        await update.message.reply_text("📊 *Your Stats:*\n\n*This Week:* $0.00\n*This Month:* $0.00", parse_mode='Markdown')
+        return
+
+# Intercept the Crypto Portfolio button
+    if text == "📈 Crypto Portfolio":
+        loading_message = await update.message.reply_text("🔄 *Syncing with market data...*", parse_mode='Markdown')
+        # (Your existing crypto logic will go here later!)
+        return
     
     clean_text = text.lstrip("+-").strip()
     first_word = clean_text.split()[0] if clean_text else ""
@@ -600,7 +639,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
 # This single line is mandatory to stop the buttons from infinitely loading!
     await query.answer() 
-    
+    await query.message.reply_text(f"Hidden Button Data: {query.data}")
     # Catch the 3 wallet buttons
     if query.data in ['wallet_personal', 'wallet_business', 'wallet_savings']:
         wallet_choice = query.data.split('_')[1].capitalize()

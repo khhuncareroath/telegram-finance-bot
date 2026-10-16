@@ -186,12 +186,14 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         category = parts[3]
         wallet = parts[4]
         
+        import sqlite3
         conn = sqlite3.connect('finance.db')
         conn.cursor().execute("INSERT INTO transactions (user_id, amount, category, type, wallet) VALUES (?, ?, ?, 'expense', ?)", (user_id, amount, category, wallet))
         conn.commit()
         conn.close()
-        # Sleek success message for expenses
-        await query.edit_message_text(f"✅ *Success:* Logged `${float(amount):,.2f}` for {category} [*{wallet} Wallet*].", parse_mode='Markdown')
+        
+        await query.edit_message_text(f"✅ *Success:* Logged `${amount:,.2f}` for {category} [*{wallet} Wallet*].", parse_mode='Markdown')
+        return
 
     elif data.startswith("inc_"):
         amount_val = data.split("_")[1]
@@ -359,7 +361,36 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Intercept the Quick Summary button
     if text == "📊 Quick Summary":
-        await update.message.reply_text("📊 *Your Stats:*\n\n*This Week:* $0.00\n*This Month:* $0.00", parse_mode='Markdown')
+        import sqlite3
+        try:
+            conn = sqlite3.connect('finance.db')
+            cursor = conn.cursor()
+            
+            cursor.execute(
+                "SELECT SUM(amount) FROM transactions "
+                "WHERE user_id = ? AND type = 'income'", 
+                (user_id,)
+            )
+            total_income = cursor.fetchone()[0] or 0.0
+            
+            cursor.execute(
+                "SELECT SUM(amount) FROM transactions "
+                "WHERE user_id = ? AND type = 'expense'", 
+                (user_id,)
+            )
+            total_expense = cursor.fetchone()[0] or 0.0
+            conn.close()
+            
+            summary_msg = (
+                f"📊 *REPORT*\n"
+                f"Total Income: `${total_income:,.2f}`\n"
+                f"Total Spent: `${total_expense:,.2f}`\n"
+                f"*Net Balance:* `${total_income - total_expense:,.2f}`"
+            )
+            await update.message.reply_text(summary_msg, parse_mode='Markdown')
+            
+        except Exception as e:
+            await update.message.reply_text("⚠️ No data yet!")
         return
 
 # Intercept the Crypto Portfolio button

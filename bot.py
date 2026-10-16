@@ -186,18 +186,41 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     elif data.startswith("wal_exp_"):
-        parts = data.split("_")
-        amount = float(parts[2])
-        category = parts[3]
-        wallet = parts[4]
-        
-        import sqlite3
-        conn = sqlite3.connect('finance.db')
-        conn.cursor().execute("INSERT INTO transactions (user_id, amount, category, type, wallet) VALUES (?, ?, ?, 'expense', ?)", (user_id, amount, category, wallet))
-        conn.commit()
-        conn.close()
-        
-        await query.edit_message_text(f"✅ *Success:* Logged `${amount:,.2f}` for {category} [*{wallet} Wallet*].", parse_mode='Markdown')
+        try:
+            user_id = query.from_user.id
+            parts = data.split("_")
+            amount = float(parts[2])
+            category = parts[3]
+            wallet = parts[4]
+            
+            import sqlite3
+            conn = sqlite3.connect('finance.db')
+            cursor = conn.cursor()
+            
+            # Notepad-safe table creation
+            cursor.execute(
+                "CREATE TABLE IF NOT EXISTS transactions ("
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "user_id INTEGER, amount REAL, category TEXT, "
+                "type TEXT, wallet TEXT, "
+                "timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)"
+            )
+            
+            # Notepad-safe insert
+            cursor.execute(
+                "INSERT INTO transactions "
+                "(user_id, amount, category, type, wallet) "
+                "VALUES (?, ?, ?, 'expense', ?)", 
+                (user_id, amount, category, wallet)
+            )
+            conn.commit()
+            conn.close()
+            
+            success_msg = f"✅ *Success:* Logged `${amount:,.2f}` for {category} [*{wallet} Wallet*]."
+            await query.edit_message_text(success_msg, parse_mode='Markdown')
+            
+        except Exception as e:
+            await query.message.reply_text(f"⚠️ Button Error: {e}")
         return
 
     elif data.startswith("inc_"):

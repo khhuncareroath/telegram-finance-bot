@@ -390,25 +390,39 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"Select action for **${amount:.2f}**:", reply_markup=reply_markup, parse_mode="Markdown")
         return
 
+    # Intercept the Quick Summary button
     if text == "📊 Quick Summary":
-        conn = sqlite3.connect('finance.db')
-        cursor = conn.cursor()
-        cursor.execute("SELECT wallet, type, SUM(amount) FROM transactions WHERE user_id = ? GROUP BY wallet, type", (user_id,))
-        data = cursor.fetchall()
-        conn.close()
-        
-        wallets = {}
-        for wallet, t_type, amt in data:
-            if wallet not in wallets: wallets[wallet] = {'income': 0, 'expense': 0}
-            wallets[wallet][t_type] += amt
+        import sqlite3
+        try:
+            conn = sqlite3.connect('finance.db')
+            cursor = conn.cursor()
             
-        response = "📊 *Multi-Wallet Overview*\n\n"
-        for w, totals in wallets.items():
-            net = totals['income'] - totals['expense']
-            response += f"📂 *{w} Wallet*\n"
-            response += f"🟢 In: `${totals['income']:,.2f}` | 🔴 Out: `${totals['expense']:,.2f}`\n"
-            response += f"💵 Net: `${net:,.2f}`\n\n"
-        await update.message.reply_text(response, parse_mode="Markdown")
+            # Calculate Total Income for this user
+            cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'income'", (user_id,))
+            total_income = cursor.fetchone()[0] or 0.0
+            
+            # Calculate Total Expenses for this user
+            cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'expense'", (user_id,))
+            total_expense = cursor.fetchone()[0] or 0.0
+            
+            conn.close()
+            
+            net_balance = total_income - total_expense
+            
+            summary_text = (
+                "📊 *YOUR FINANCIAL REPORT*\n"
+                "━━━━━━━━━━━━━━━━━━\n"
+                f"📈 *Total Income:* `${total_income:,.2f}`\n"
+                f"📉 *Total Spending:* `${total_expense:,.2f}`\n"
+                "━━━━━━━━━━━━━━━━━━\n"
+                f"💰 *Net Balance:* `${net_balance:,.2f}`"
+            )
+            await update.message.reply_text(summary_text, parse_mode='Markdown')
+            
+        except Exception as e:
+            await update.message.reply_text("⚠️ *No data found.* Have you logged any transactions yet?", parse_mode='Markdown')
+            print(f"Report error: {e}")
+        return
         
     elif text == "📈 Crypto & Trading":
         conn = sqlite3.connect('finance.db')

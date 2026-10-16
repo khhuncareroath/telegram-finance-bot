@@ -488,8 +488,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == 'action_stats':
         await query.answer()
         await query.message.reply_text("📊 *Your Stats:*\n\n*This Week:* $0.00\n*This Month:* $0.00", parse_mode='Markdown')
-    else:
-        # Try to process as a calendar click
+    elif query.data.startswith('cbcal'):
+        # This strictly catches calendar clicks only so it doesn't crash
         result, key, step = DetailedTelegramCalendar().process(query.data)
         if not result and key:
             await query.answer()
@@ -497,9 +497,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif result:
             await query.answer()
             await query.message.edit_text(f"📅 You selected {result}.")
-        else:
-            # If it is not a calendar click, pass it to your original button code!
-            await button_callback(update, context)
+    else:
+        # This sends all your original buttons (Meals, Buy Asset, etc.) to your old code
+        await button_callback(update, context)
 
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler

@@ -16,13 +16,21 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Cal
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "YOUR_TELEGRAM_TOKEN_HERE")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
 
+import sqlite3
+import matplotlib.pyplot as plt
+import os
+from datetime import datetime
+
 def init_db():
     conn = sqlite3.connect('finance.db')
-    cursor = conn.cursor()
-    # Added user_id to all tables
-    cursor.execute('''CREATE TABLE IF NOT EXISTS transactions (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, amount REAL, category TEXT, type TEXT, wallet TEXT DEFAULT 'Personal')''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, name TEXT, target REAL, current REAL DEFAULT 0, UNIQUE(user_id, name))''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS portfolio (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, ticker TEXT, amount REAL, avg_price REAL, portfolio_type TEXT DEFAULT 'Main', UNIQUE(user_id, ticker))''')
+    c = conn.cursor()
+    # Existing tables
+    c.execute('''CREATE TABLE IF NOT EXISTS expenses (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, category TEXT, date TEXT)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS income (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, source TEXT, date TEXT)''')
+    
+    # NEW: Premium feature tables
+    c.execute('''CREATE TABLE IF NOT EXISTS budgets (user_id INTEGER, category TEXT, monthly_limit REAL, PRIMARY KEY(user_id, category))''')
+    c.execute('''CREATE TABLE IF NOT EXISTS portfolio (id INTEGER PRIMARY KEY, user_id INTEGER, asset TEXT, amount REAL, buy_price REAL)''')
     conn.commit()
     conn.close()
 
@@ -513,6 +521,62 @@ async def calendar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     calendar, step = DetailedTelegramCalendar().build()
     await update.message.reply_text(f"Select {LSTEP[step]}:", reply_markup=calendar)
 
+async def chart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.chat_id
+    current_month = datetime.now().strftime('%Y-%m')
+    
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+    c.execute("SELECT category, SUM(amount) FROM expenses WHERE user_id=? AND date LIKE ? GROUP BY category", (user_id, f"{current_month}%"))
+    data = c.fetchall()
+    conn.close()
+
+    if not data:
+        await update.message.reply_text("No expenses yet this month to chart!")
+        return
+
+    # Generate Chart
+    categories = [row[0] for row in data]
+    amounts = [row[1] for row in data]
+    
+    plt.figure(figsize=(6, 6))
+    plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140)
+    plt.title(f"Expenses: {current_month}")
+    
+    # Save temporarily and send
+    chart_path = "temp_chart.png"
+    plt.savefig(chart_path)
+    plt.close()
+    
+    with open(chart_path, 'rb') as photo:
+        await update.message.reply_photo(photo=photo, caption="📊 Here is your visual breakdown for this month!")
+    os.remove(chart_path)
+
+async def check_budget_alert(user_id, category, current_expense):
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+    c.execute("SELECT monthly_limit FROM budgets WHERE user_id=? AND category=?", (user_id, category))
+    limit_row = c.fetchone()
+    
+    if limit_row:
+        limit = limit_row[0]
+        current_month = datetime.now().strftime('%Y-%m')
+        c.execute("SELECT SUM(amount) FROM expenses WHERE user_id=? AND category=? AND date LIKE ?", (user_id, category, f"{current_month}%"))
+        total_spent = c.fetchone()[0] or 0
+        
+        conn.close()
+        
+        if total_spent + current_expense >= (limit * 0.8):
+            return f"\n⚠️ *Warning:* You are approaching your monthly limit for {category}!"
+    else:
+        conn.close()
+    return ""
+async def monthly_report_job(context: ContextTypes.DEFAULT_TYPE):
+    job = context.job
+    user_id = job.chat_id
+    
+    # We will trigger a simple message for now, but later we can attach your PDF export here!
+    await context.bot.send_message(chat_id=user_id, text="📅 Here is your automated monthly financial summary!")
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     
@@ -563,11 +627,16 @@ if __name__ == '__main__':
     t.start()
     
     app = ApplicationBuilder().token(BOT_TOKEN).connect_timeout(30.0).read_timeout(30.0).build()
-    # 1. The New Handlers
+ # Start the automated monthly report timer
+    # Replace YOUR_TELEGRAM_ID with your actual number ID if you want it to start immediately
+    # app.job_queue.run_repeating(monthly_report_job, interval=2592000, first=10, chat_id=YOUR_TELEGRAM_ID)
+   # 1. The New Handlers
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("guide", guide_command))
     app.add_handler(CommandHandler("calendar", calendar_command))
-    
+    app.add_handler(CommandHandler("chart", chart_command))
+    app.add_handler(CommandHandler("portfolio", portfolio_command))
+
     # 2. Your Existing Handlers (Kept exactly the same)
     app.add_handler(CommandHandler("export", export_data) if 'export_data' in globals() else CommandHandler("export", start_command))
     app.add_handler(CommandHandler("excel", export_excel))

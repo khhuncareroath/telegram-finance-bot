@@ -5,3 +5,5 @@ openpyxl
 reportlab
 python-telegram-bot-calendar
 requests
+matplotlib
+python-telegram-bot[job-queue]

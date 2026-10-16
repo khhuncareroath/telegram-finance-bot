@@ -162,24 +162,29 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if data.startswith("exp_"):
         parts = data.split("_")
-        amount = parts[1]
+        amount = float(parts[1])
         category = parts[2]
         keyboard = [
-            [InlineKeyboardButton("👤 Personal", callback_data=f"wal_exp_{amount}_{category}_Personal"),
-             InlineKeyboardButton("💼 Business", callback_data=f"wal_exp_{amount}_{category}_Business")],
-            [InlineKeyboardButton("🏦 Savings", callback_data=f"wal_exp_{amount}_{category}_Savings")]
+            [
+                InlineKeyboardButton("👤 Personal", callback_data=f"wal_exp_{amount}_{category}_Personal"),
+                InlineKeyboardButton("💼 Business", callback_data=f"wal_exp_{amount}_{category}_Business")
+            ],
+            [
+                InlineKeyboardButton("🏦 Savings", callback_data=f"wal_exp_{amount}_{category}_Savings")
+            ]
         ]
-        # A visually appealing receipt format using your existing variables
+        
         receipt_text = (
             "🧾 *TRANSACTION LOGGED*\n"
             "━━━━━━━━━━━━━━━━━━\n"
-            f"💵 *Amount:* `${float(amount):,.2f}`\n"
+            f"💵 *Amount:* `${amount:,.2f}`\n"
             f"🏷️ *Category:* `{category}`\n"
             "📅 *Date:* `Today`\n\n"
             "Select the funding source below:"
         )
         await query.edit_message_text(text=receipt_text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
-        
+        return
+
     elif data.startswith("wal_exp_"):
         parts = data.split("_")
         amount = float(parts[2])

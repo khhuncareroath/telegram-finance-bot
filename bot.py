@@ -652,8 +652,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     
 # This single line is mandatory to stop the buttons from infinitely loading!
-    await query.answer() 
-    await query.message.reply_text(f"Hidden Button Data: {query.data}")
+    await query.answer()
     # Catch the 3 wallet buttons
     if query.data in ['wallet_personal', 'wallet_business', 'wallet_savings']:
         wallet_choice = query.data.split('_')[1].capitalize()

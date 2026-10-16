@@ -577,6 +577,44 @@ async def monthly_report_job(context: ContextTypes.DEFAULT_TYPE):
     
     # We will trigger a simple message for now, but later we can attach your PDF export here!
     await context.bot.send_message(chat_id=user_id, text="📅 Here is your automated monthly financial summary!")
+
+async def portfolio_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.chat_id
+    
+    # Connect to the portfolio database table we created
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+    c.execute("SELECT asset, SUM(amount), AVG(buy_price) FROM portfolio WHERE user_id=? GROUP BY asset", (user_id,))
+    assets = c.fetchall()
+    conn.close()
+
+    if not assets:
+        await update.message.reply_text("Your portfolio is currently empty! Buy an asset first to track your PnL.")
+        return
+
+    message = "📈 *Your Advanced Portfolio & PnL:*\n\n"
+    total_profit = 0
+
+    for asset in assets:
+        ticker, amount, avg_buy_price = asset
+        current_price = get_live_price(ticker) 
+        
+        if current_price > 0:
+            current_value = amount * current_price
+            invested_value = amount * avg_buy_price
+            pnl = current_value - invested_value
+            pnl_percent = (pnl / invested_value) * 100 if invested_value > 0 else 0
+            total_profit += pnl
+            
+            icon = "🟢" if pnl >= 0 else "🔴"
+            message += f"*{ticker}* (Amount: {amount})\n"
+            message += f"Avg Buy Price: ${avg_buy_price:.2f} | Current Price: ${current_price:.2f}\n"
+            message += f"{icon} PnL: ${pnl:.2f} ({pnl_percent:.2f}%)\n\n"
+
+    message += f"*Total Net PnL:* ${total_profit:.2f}"
+    
+    await update.message.reply_text(message, parse_mode='Markdown')
+
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     

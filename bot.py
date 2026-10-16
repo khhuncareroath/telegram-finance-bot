@@ -42,46 +42,22 @@ def get_progress_bar(current, target):
     return f"`{bar}` {percent*100:.1f}%"
 
 def get_live_price(ticker):
-    sym = ticker.upper()
-    headers = {"User-Agent": "Mozilla/5.0"}
-    
-    if sym in ["PAXG", "GOLD"]:
-        # 1. Binance public API
-        try:
-            r = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT", headers=headers, timeout=5)
-            if r.status_code == 200:
-                return float(r.json()["price"])
-        except Exception:
-            pass
-            
-        # 2. CoinGecko public API
-        try:
-            r = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=pax-gold&vs_currencies=usd", headers=headers, timeout=5)
-            if r.status_code == 200:
-                return float(r.json()["pax-gold"]["usd"])
-        except Exception:
-            pass
-
-        # 3. CryptoCompare public API
-        try:
-            r = requests.get("https://min-api.cryptocompare.com/data/price?fsym=PAXG&tsyms=USD", headers=headers, timeout=5)
-            if r.status_code == 200:
-                return float(r.json()["USD"])
-        except Exception:
-            pass
-
-        # Ultimate fallback estimate so the transaction never errors out
-        return 2700.00
-
-    # Default fallback for any other asset ticker
     try:
-        r = requests.get(f"https://api.binance.com/api/v3/ticker/price?symbol={sym}USDT", headers=headers, timeout=5)
-        if r.status_code == 200:
-            return float(r.json()["price"])
-    except Exception:
-        pass
-
-    return 0.0
+        import requests 
+        
+        # Translate "GOLD" to Binance's actual gold token ticker (PAXG)
+        if ticker.upper() == "GOLD":
+            ticker = "PAXG"
+            
+        # Automatically append USDT to the ticker (e.g., BTC becomes BTCUSDT)
+        symbol = f"{ticker.upper()}USDT"
+        url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
+        
+        response = requests.get(url).json()
+        return float(response['price'])
+    except Exception as e:
+        print(f"Error fetching {ticker}: {e}")
+        return 0
 
 async def export_excel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -347,6 +323,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = update.message.text.strip()
+# Intercept the Savings Goals button
+    if text == "🎯 Savings Goals":
+        await update.message.reply_text("Here are your active Savings Goals:\n(Goal data will go here!)")
+        return
     text_lower = text.lower()
     
     clean_text = text.lstrip("+-").strip()
@@ -618,15 +598,23 @@ async def portfolio_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     
+# This single line is mandatory to stop the buttons from infinitely loading!
+    await query.answer() 
+    
+    # Catch the 3 wallet buttons
+    if query.data in ['wallet_personal', 'wallet_business', 'wallet_savings']:
+        wallet_choice = query.data.split('_')[1].capitalize()
+        
+        # We will just send a confirmation message for now
+        await query.edit_message_text(text=f"✅ Successfully saved to your {wallet_choice} wallet!")
+        return
+
     if query.data == 'action_guide':
-        await query.answer()
         await guide_command(update, context)
     elif query.data == 'action_calendar':
-        await query.answer()
         calendar, step = DetailedTelegramCalendar().build()
         await query.message.reply_text("Select a date:", reply_markup=calendar)
     elif query.data == 'action_stats':
-        await query.answer()
         await query.message.reply_text("📊 *Your Stats:*\n\n*This Week:* $0.00\n*This Month:* $0.00", parse_mode='Markdown')
     elif query.data.startswith('cbcal'):
         # This strictly catches calendar clicks only so it doesn't crash

@@ -444,7 +444,7 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             gemini_client = genai.Client(api_key=GEMINI_API_KEY)
             prompt = f"Financial advisor bot. Income: ${inc}, Expenses:${exp}. Client query: '{text}'. Keep it brief and practical."
-            response = gemini_client.models.generate_content(model='gemini-2.0-flash', contents=prompt)
+            response = gemini_client.models.generate_content(model='gemini-3.8-flash', contents=prompt)
             await update.message.reply_text(f"🧠 Consultant:\n\n{response.text}")
         except Exception as e:
             await update.message.reply_text(f"❌ AI Error: {e}")
@@ -477,19 +477,29 @@ async def calendar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
     
     if query.data == 'action_guide':
+        await query.answer()
         await guide_command(update, context)
     elif query.data == 'action_calendar':
+        await query.answer()
         calendar, step = DetailedTelegramCalendar().build()
         await query.message.reply_text("Select a date:", reply_markup=calendar)
+    elif query.data == 'action_stats':
+        await query.answer()
+        await query.message.reply_text("📊 *Your Stats:*\n\n*This Week:* $0.00\n*This Month:* $0.00", parse_mode='Markdown')
     else:
+        # Try to process as a calendar click
         result, key, step = DetailedTelegramCalendar().process(query.data)
         if not result and key:
+            await query.answer()
             await query.message.edit_text(f"Select {LSTEP[step]}:", reply_markup=key)
         elif result:
-            await query.message.edit_text(f"📅 You selected {result}. You spent $0 on this day.")
+            await query.answer()
+            await query.message.edit_text(f"📅 You selected {result}.")
+        else:
+            # If it is not a calendar click, pass it to your original button code!
+            await button_callback(update, context)
 
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler

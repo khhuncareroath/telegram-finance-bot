@@ -274,22 +274,28 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             conn = sqlite3.connect('finance.db')
             cursor = conn.cursor()
             
-            if data == "reset_expenses":
+            # Ensure tables exist to prevent invisible crashes
+            cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
+            cursor.execute("CREATE TABLE IF NOT EXISTS portfolio (id INTEGER PRIMARY KEY, user_id INTEGER, asset TEXT, amount REAL)")
+            
+            msg = "⚠️ Button not recognized."
+            if "expense" in data:
                 cursor.execute("DELETE FROM transactions WHERE user_id = ? AND type = 'expense'", (user_id,))
                 msg = "🗑️ *All Expenses Reset!*"
-            elif data == "reset_income":
+            elif "income" in data:
                 cursor.execute("DELETE FROM transactions WHERE user_id = ? AND type = 'income'", (user_id,))
                 msg = "🗑️ *All Income Reset!*"
-            elif data == "reset_goals":
+            elif "goal" in data:
                 cursor.execute("DELETE FROM goals WHERE user_id = ?", (user_id,))
                 msg = "🗑️ *All Goals Reset!*"
-            elif data == "reset_portfolio":
+            elif "portfolio" in data:
                 cursor.execute("DELETE FROM portfolio WHERE user_id = ?", (user_id,))
                 msg = "🗑️ *Portfolio Reset!*"
                 
             conn.commit()
             conn.close()
             await query.edit_message_text(msg, parse_mode='Markdown')
+            
         except Exception as e:
             await query.message.reply_text(f"⚠️ Reset Error: {e}")
         return
@@ -415,12 +421,66 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = update.message.text.strip()
-# Intercept the Savings Goals button
-    if text == "🎯 Savings Goals":
-        await update.message.reply_text("Here are your active Savings Goals:\n(Goal data will go here!)")
+# 1. Show Goal Progress
+    if text == "🎯 Savings Goals" or text == "Savings Goals":
+        try:
+            user_id = update.message.from_user.id
+            import sqlite3
+            conn = sqlite3.connect('finance.db')
+            cursor = conn.cursor()
+            cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
+            
+            # Fetch Goals
+            cursor.execute("SELECT name, amount FROM goals WHERE user_id = ?", (user_id,))
+            goals = cursor.fetchall()
+            
+            # Calculate what is actually in the Savings Wallet
+            cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'income' AND wallet = 'Savings'", (user_id,))
+            sav_in = cursor.fetchone()[0] or 0.0
+            cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'expense' AND wallet = 'Savings'", (user_id,))
+            sav_out = cursor.fetchone()[0] or 0.0
+            curr_savings = sav_in - sav_out
+            conn.close()
+            
+            if not goals:
+                await update.message.reply_text(
+                    f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n"
+                    "⚠️ You have no active goals.\n"
+                    "To add one, just type a message like this:\n`Goal 500 New Laptop`", 
+                    parse_mode='Markdown'
+                )
+                return
+                
+            msg = f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n🎯 *Your Goals:*\n"
+            for name, amount in goals:
+                progress = min(100, (curr_savings / amount) * 100) if amount > 0 else 0
+                msg += f"• {name}: `${amount:,.2f}` (*{progress:.1f}%* funded)\n"
+                
+            await update.message.reply_text(msg, parse_mode='Markdown')
+        except Exception as e:
+            await update.message.reply_text(f"⚠️ Error: {e}")
         return
-    text_lower = text.lower()
 
+    # 2. Command to Save a New Goal
+    if text.lower().startswith("goal "):
+        try:
+            user_id = update.message.from_user.id
+            parts = text.split(" ", 2)
+            amount = float(parts[1])
+            name = parts[2]
+            
+            import sqlite3
+            conn = sqlite3.connect('finance.db')
+            cursor = conn.cursor()
+            cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
+            cursor.execute("INSERT INTO goals (user_id, amount, name) VALUES (?, ?, ?)", (user_id, amount, name))
+            conn.commit()
+            conn.close()
+            
+            await update.message.reply_text(f"🎯 *Goal Saved:* `${amount:,.2f}` for *{name}*", parse_mode='Markdown')
+        except Exception:
+            await update.message.reply_text("⚠️ *Format Error:*\nPlease type it exactly like this:\n`Goal 500 New Laptop`", parse_mode='Markdown')
+        return
 # Intercept the Quick Summary button
     if text == "📊 Quick Summary":
         import sqlite3

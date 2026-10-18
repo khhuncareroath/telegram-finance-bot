@@ -305,26 +305,25 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
         except Exception as e:
             await query.message.reply_text(f"⚠️ Reset Error: {e}")
-        return
-            
-        elif data.startswith("buy_") and "_menu" in data:
+            return
+        if data.startswith("buy_") and "_menu" in data:
             amount = data.split("_")[1]
             msg = f"📈 *Buy Asset:*\nYou chose to invest `${float(amount):,.2f}`.\nTo log this, reply with the coin name like this:\n`Buy {amount} BTC`"
             await query.edit_message_text(msg, parse_mode='Markdown')
-        return
+            return
 
         elif data.startswith("sell_") and "_menu" in data:
             amount = data.split("_")[1]
             msg = f"📉 *Sell Asset:*\nYou chose to sell `${float(amount):,.2f}`.\nTo log this, reply with the coin name like this:\n`Sell {amount} BTC`"
             await query.edit_message_text(msg, parse_mode='Markdown')
-        return
+            return
 
         elif data.startswith("goaladd_") and "_menu" in data:
             amount = data.split("_")[1]
             msg = f"🎯 *Save to Goal:*\nYou chose to save `${float(amount):,.2f}`.\nTo log this, reply with the goal name like this:\n`Goal {amount} Laptop`"
             await query.edit_message_text(msg, parse_mode='Markdown')
-        return
-async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
+            return    
+        async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = update.message.text.strip()
 # 1. Show Goal Progress

@@ -267,7 +267,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.message.reply_text(f"⚠️ Income Error: {e}")
         return
 
-    	elif data.startswith("reset_"):
+    elif data.startswith("reset_"):
         try:
             user_id = query.from_user.id
             import sqlite3

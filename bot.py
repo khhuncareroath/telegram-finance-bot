@@ -275,32 +275,29 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             cursor = conn.cursor()
             
             # Ensure tables exist to prevent invisible crashes
-            cursor.execute(
-                "CREATE TABLE IF NOT EXISTS transactions ("
-                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                "user_id INTEGER, amount REAL, category TEXT, "
-                "type TEXT, wallet TEXT, "
-                "timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)"
-            )
+            cursor.execute("CREATE TABLE IF NOT EXISTS transactions (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, amount REAL, category TEXT, type TEXT, wallet TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)")
             cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
             cursor.execute("CREATE TABLE IF NOT EXISTS portfolio (id INTEGER PRIMARY KEY, user_id INTEGER, asset TEXT, amount REAL)")
             
-            # Make the data lowercase so capital letters don't break it
             val = data.lower()
-            msg = f"⚠️ Button not recognized: {data}"
             
-            if "expens" in val:
+            # Look for abbreviations so we don't have to guess the exact name!
+            if "exp" in val:
                 cursor.execute("DELETE FROM transactions WHERE user_id = ? AND type = 'expense'", (user_id,))
                 msg = "🗑️ *All Expenses Reset!*"
-            elif "incom" in val:
+            elif "inc" in val:
                 cursor.execute("DELETE FROM transactions WHERE user_id = ? AND type = 'income'", (user_id,))
                 msg = "🗑️ *All Income Reset!*"
             elif "goal" in val:
                 cursor.execute("DELETE FROM goals WHERE user_id = ?", (user_id,))
                 msg = "🗑️ *All Goals Reset!*"
-            elif "portfol" in val or "crypto" in val:
+            elif "port" in val or "crypto" in val:
                 cursor.execute("DELETE FROM portfolio WHERE user_id = ?", (user_id,))
                 msg = "🗑️ *Portfolio Reset!*"
+            else:
+                # If it still doesn't match, safely print the name without crashing Telegram
+                safe_data = data.replace("_", "-")
+                msg = f"⚠️ Unknown button: {safe_data}"
                 
             conn.commit()
             conn.close()

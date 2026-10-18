@@ -374,7 +374,6 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             await update.message.reply_text(f"⚠️ Error: {e}")
         return
-
         # 2. Command to Save a New Goal
         if text.lower().startswith("goal "):
             try:
@@ -395,7 +394,7 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception as e:
                 await update.message.reply_text(f"⚠️ Error: {e}")
             return
-# Intercept the Crypto Portfolio button
+        # Intercept the Crypto Portfolio button
     if text == "📈 Crypto Portfolio":
         loading_message = await update.message.reply_text("🔄 *Syncing with market data...*", parse_mode='Markdown')
         # (Your existing crypto logic will go here later!)

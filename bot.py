@@ -375,30 +375,30 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(f"⚠️ Error: {e}")
         return
 
-    # 2. Command to Save a New Goal
-    if text.lower().startswith("goal "):
-        try:
-            user_id = update.message.from_user.id
-            parts = text.split(" ", 2)
-            amount = float(parts[1])
-            name = parts[2]
+        # 2. Command to Save a New Goal
+        if text.lower().startswith("goal "):
+            try:
+                user_id = update.message.from_user.id
+                parts = text.split(" ", 2)
+                amount = float(parts[1])
+                name = parts[2]
             
+                import sqlite3
+                conn = sqlite3.connect('finance.db')
+                cursor = conn.cursor()
+                cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
+                cursor.execute("INSERT INTO goals (user_id, amount, name) VALUES (?, ?, ?)", (user_id, amount, name))
+                conn.commit()
+                conn.close()
+            
+                await update.message.reply_text(f"🎯 *Goal Saved:* `${amount:,.2f}` for *{name}*", parse_mode='Markdown')
+            except Exception:
+                await update.message.reply_text("⚠️ *Format Error:*\nPlease type it exactly like this:\n`Goal 500 New Laptop`", parse_mode='Markdown')
+            return
+        # Intercept the Quick Summary button
+        if text == "📊 Quick Summary":
             import sqlite3
-            conn = sqlite3.connect('finance.db')
-            cursor = conn.cursor()
-            cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
-            cursor.execute("INSERT INTO goals (user_id, amount, name) VALUES (?, ?, ?)", (user_id, amount, name))
-            conn.commit()
-            conn.close()
-            
-            await update.message.reply_text(f"🎯 *Goal Saved:* `${amount:,.2f}` for *{name}*", parse_mode='Markdown')
-        except Exception:
-            await update.message.reply_text("⚠️ *Format Error:*\nPlease type it exactly like this:\n`Goal 500 New Laptop`", parse_mode='Markdown')
-        return
-# Intercept the Quick Summary button
-    if text == "📊 Quick Summary":
-        import sqlite3
-        try:
+            try:
             conn = sqlite3.connect('finance.db')
             cursor = conn.cursor()
             

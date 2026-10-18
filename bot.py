@@ -323,26 +323,26 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             msg = f"🎯 *Save to Goal:*\nYou chose to save `${float(amount):,.2f}`.\nTo log this, reply with the goal name like this:\n`Goal {amount} Laptop`"
             await query.edit_message_text(msg, parse_mode='Markdown')
             return    
-        async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    text = update.message.text.strip()
-# 1. Show Goal Progress
-    if text == "🎯 Savings Goals" or text == "Savings Goals":
-        try:
-            user_id = update.message.from_user.id
-            import sqlite3
-            conn = sqlite3.connect('finance.db')
-            cursor = conn.cursor()
+async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user_id = update.effective_user.id
+        text = update.message.text.strip()
+        # 1. Show Goal Progress
+        if text == "🎯 Savings Goals" or text == "Savings Goals":
+            try:
+                user_id = update.message.from_user.id
+                import sqlite3
+                conn = sqlite3.connect('finance.db')
+                cursor = conn.cursor()
             
-            # Anti-Crash: Ensure tables exist before trying to read them
-            cursor.execute(
-                "CREATE TABLE IF NOT EXISTS transactions ("
-                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                "user_id INTEGER, amount REAL, category TEXT, "
-                "type TEXT, wallet TEXT, "
-                "timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)"
-            )
-            cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
+                # Anti-Crash: Ensure tables exist before trying to read them
+                cursor.execute(
+                    "CREATE TABLE IF NOT EXISTS transactions ("
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    "user_id INTEGER, amount REAL, category TEXT, "
+                    "type TEXT, wallet TEXT, "
+                    "timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)"
+                )
+                cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
             
             # Fetch Goals
             cursor.execute("SELECT name, amount FROM goals WHERE user_id = ?", (user_id,))

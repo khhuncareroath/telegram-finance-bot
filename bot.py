@@ -392,45 +392,9 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 conn.close()
             
                 await update.message.reply_text(f"🎯 *Goal Saved:* `${amount:,.2f}` for *{name}*", parse_mode='Markdown')
-            except Exception:
-                await update.message.reply_text("⚠️ *Format Error:*\nPlease type it exactly like this:\n`Goal 500 New Laptop`", parse_mode='Markdown')
+            except Exception as e:
+                await update.message.reply_text(f"⚠️ Error: {e}")
             return
-        # Intercept the Quick Summary button
-        if text == "📊 Quick Summary":
-            import sqlite3
-            try:
-            conn = sqlite3.connect('finance.db')
-            cursor = conn.cursor()
-            
-            cursor.execute("SELECT wallet, SUM(amount) FROM transactions WHERE user_id = ? AND type = 'expense' GROUP BY wallet", (user_id,))
-            exp_data = dict(cursor.fetchall())
-            
-            cursor.execute("SELECT wallet, SUM(amount) FROM transactions WHERE user_id = ? AND type = 'income' GROUP BY wallet", (user_id,))
-            inc_data = dict(cursor.fetchall())
-            conn.close()
-            
-            p_inc, p_exp = inc_data.get('Personal', 0.0), exp_data.get('Personal', 0.0)
-            b_inc, b_exp = inc_data.get('Business', 0.0), exp_data.get('Business', 0.0)
-            s_inc, s_exp = inc_data.get('Savings', 0.0), exp_data.get('Savings', 0.0)
-            
-            tot_inc = p_inc + b_inc + s_inc
-            tot_exp = p_exp + b_exp + s_exp
-            
-            summary_msg = (
-                f"📊 *FINANCIAL REPORT*\n\n"
-                f"👤 *Personal:* In `${p_inc:,.2f}` | Out `${p_exp:,.2f}`\n"
-                f"💼 *Business:* In `${b_inc:,.2f}` | Out `${b_exp:,.2f}`\n"
-                f"🏦 *Savings:* In `${s_inc:,.2f}` | Out `${s_exp:,.2f}`\n\n"
-                f"━━━━━━━━━━━━━━━━━━\n"
-                f"📈 *Total Income:* `${tot_inc:,.2f}`\n"
-                f"📉 *Total Spent:* `${tot_exp:,.2f}`\n"
-                f"💰 *Net Balance:* `${tot_inc - tot_exp:,.2f}`"
-            )
-            await update.message.reply_text(summary_msg, parse_mode='Markdown')
-            
-        except Exception as e:
-            await update.message.reply_text(f"⚠️ Error: {e}")
-        return
 # Intercept the Crypto Portfolio button
     if text == "📈 Crypto Portfolio":
         loading_message = await update.message.reply_text("🔄 *Syncing with market data...*", parse_mode='Markdown')

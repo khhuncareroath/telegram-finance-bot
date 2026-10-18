@@ -275,20 +275,30 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             cursor = conn.cursor()
             
             # Ensure tables exist to prevent invisible crashes
+            cursor.execute(
+                "CREATE TABLE IF NOT EXISTS transactions ("
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "user_id INTEGER, amount REAL, category TEXT, "
+                "type TEXT, wallet TEXT, "
+                "timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)"
+            )
             cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
             cursor.execute("CREATE TABLE IF NOT EXISTS portfolio (id INTEGER PRIMARY KEY, user_id INTEGER, asset TEXT, amount REAL)")
             
-            msg = "⚠️ Button not recognized."
-            if "expense" in data:
+            # Make the data lowercase so capital letters don't break it
+            val = data.lower()
+            msg = f"⚠️ Button not recognized: {data}"
+            
+            if "expens" in val:
                 cursor.execute("DELETE FROM transactions WHERE user_id = ? AND type = 'expense'", (user_id,))
                 msg = "🗑️ *All Expenses Reset!*"
-            elif "income" in data:
+            elif "incom" in val:
                 cursor.execute("DELETE FROM transactions WHERE user_id = ? AND type = 'income'", (user_id,))
                 msg = "🗑️ *All Income Reset!*"
-            elif "goal" in data:
+            elif "goal" in val:
                 cursor.execute("DELETE FROM goals WHERE user_id = ?", (user_id,))
                 msg = "🗑️ *All Goals Reset!*"
-            elif "portfolio" in data:
+            elif "portfol" in val or "crypto" in val:
                 cursor.execute("DELETE FROM portfolio WHERE user_id = ?", (user_id,))
                 msg = "🗑️ *Portfolio Reset!*"
                 
@@ -428,6 +438,15 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
             import sqlite3
             conn = sqlite3.connect('finance.db')
             cursor = conn.cursor()
+            
+            # Anti-Crash: Ensure tables exist before trying to read them
+            cursor.execute(
+                "CREATE TABLE IF NOT EXISTS transactions ("
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "user_id INTEGER, amount REAL, category TEXT, "
+                "type TEXT, wallet TEXT, "
+                "timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)"
+            )
             cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
             
             # Fetch Goals

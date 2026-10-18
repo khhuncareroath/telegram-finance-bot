@@ -233,32 +233,66 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(f"Select Wallet for Income of ${float(amount_val):.2f}:", reply_markup=InlineKeyboardMarkup(keyboard))
 
     elif data.startswith("wal_inc_"):
-        parts = data.split("_")
-        amount = float(parts[2])
-        wallet = parts[3]
-        conn = sqlite3.connect('finance.db')
-        conn.cursor().execute("INSERT INTO transactions (user_id, amount, category, type, wallet) VALUES (?, ?, 'Income', 'income', ?)", (user_id, amount, wallet))
-        conn.commit()
-        conn.close()
-        await query.edit_message_text(f"💰 Added ${amount:.2f} Income to [{wallet} Wallet].")
+        try:
+            user_id = query.from_user.id
+            parts = data.split("_")
+            amount = float(parts[2])
+            wallet = parts[3]
+            
+            import sqlite3
+            conn = sqlite3.connect('finance.db')
+            cursor = conn.cursor()
+            
+            cursor.execute(
+                "CREATE TABLE IF NOT EXISTS transactions ("
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "user_id INTEGER, amount REAL, category TEXT, "
+                "type TEXT, wallet TEXT, "
+                "timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)"
+            )
+            
+            cursor.execute(
+                "INSERT INTO transactions "
+                "(user_id, amount, category, type, wallet) "
+                "VALUES (?, ?, 'Income', 'income', ?)", 
+                (user_id, amount, wallet)
+            )
+            conn.commit()
+            conn.close()
+            
+            msg = f"✅ *Income Saved:* `${amount:,.2f}` to [*{wallet} Wallet*]."
+            await query.edit_message_text(msg, parse_mode='Markdown')
+            
+        except Exception as e:
+            await query.message.reply_text(f"⚠️ Income Error: {e}")
+        return
 
-    elif data.startswith("buy_") and data.endswith("_menu"):
-        amount = float(data.split("_")[1])
-        keyboard = [
-            [InlineKeyboardButton("₿ BTC", callback_data=f"buy_{amount}_BTC"), InlineKeyboardButton("♦️ ETH", callback_data=f"buy_{amount}_ETH")],
-            [InlineKeyboardButton("🪙 PAXG", callback_data=f"buy_{amount}_PAXG"), InlineKeyboardButton("☀️ SOL", callback_data=f"buy_{amount}_SOL")]
-        ]
-        await query.edit_message_text(f"🪙 Asset to BUY for ${amount:.2f}:", reply_markup=InlineKeyboardMarkup(keyboard))
-        
-    elif data.startswith("buy_"):
-        parts = data.split("_")
-        invested_dollars = float(parts[1])
-        ticker = parts[2]
-        live_price = get_live_price(ticker)
-        
-        if live_price == 0:
-            await query.edit_message_text(f"❌ Market price fetch failed for {ticker}.")
-            return
+    	elif data.startswith("reset_"):
+        try:
+            user_id = query.from_user.id
+            import sqlite3
+            conn = sqlite3.connect('finance.db')
+            cursor = conn.cursor()
+            
+            if data == "reset_expenses":
+                cursor.execute("DELETE FROM transactions WHERE user_id = ? AND type = 'expense'", (user_id,))
+                msg = "🗑️ *All Expenses Reset!*"
+            elif data == "reset_income":
+                cursor.execute("DELETE FROM transactions WHERE user_id = ? AND type = 'income'", (user_id,))
+                msg = "🗑️ *All Income Reset!*"
+            elif data == "reset_goals":
+                cursor.execute("DELETE FROM goals WHERE user_id = ?", (user_id,))
+                msg = "🗑️ *All Goals Reset!*"
+            elif data == "reset_portfolio":
+                cursor.execute("DELETE FROM portfolio WHERE user_id = ?", (user_id,))
+                msg = "🗑️ *Portfolio Reset!*"
+                
+            conn.commit()
+            conn.close()
+            await query.edit_message_text(msg, parse_mode='Markdown')
+        except Exception as e:
+            await query.message.reply_text(f"⚠️ Reset Error: {e}")
+        return
             
         coin_amount = invested_dollars / live_price
         conn = sqlite3.connect('finance.db')
@@ -394,33 +428,35 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
             conn = sqlite3.connect('finance.db')
             cursor = conn.cursor()
             
-            cursor.execute(
-                "SELECT SUM(amount) FROM transactions "
-                "WHERE user_id = ? AND type = 'income'", 
-                (user_id,)
-            )
-            total_income = cursor.fetchone()[0] or 0.0
+            cursor.execute("SELECT wallet, SUM(amount) FROM transactions WHERE user_id = ? AND type = 'expense' GROUP BY wallet", (user_id,))
+            exp_data = dict(cursor.fetchall())
             
-            cursor.execute(
-                "SELECT SUM(amount) FROM transactions "
-                "WHERE user_id = ? AND type = 'expense'", 
-                (user_id,)
-            )
-            total_expense = cursor.fetchone()[0] or 0.0
+            cursor.execute("SELECT wallet, SUM(amount) FROM transactions WHERE user_id = ? AND type = 'income' GROUP BY wallet", (user_id,))
+            inc_data = dict(cursor.fetchall())
             conn.close()
             
+            p_inc, p_exp = inc_data.get('Personal', 0.0), exp_data.get('Personal', 0.0)
+            b_inc, b_exp = inc_data.get('Business', 0.0), exp_data.get('Business', 0.0)
+            s_inc, s_exp = inc_data.get('Savings', 0.0), exp_data.get('Savings', 0.0)
+            
+            tot_inc = p_inc + b_inc + s_inc
+            tot_exp = p_exp + b_exp + s_exp
+            
             summary_msg = (
-                f"📊 *REPORT*\n"
-                f"Total Income: `${total_income:,.2f}`\n"
-                f"Total Spent: `${total_expense:,.2f}`\n"
-                f"*Net Balance:* `${total_income - total_expense:,.2f}`"
+                f"📊 *FINANCIAL REPORT*\n\n"
+                f"👤 *Personal:* In `${p_inc:,.2f}` | Out `${p_exp:,.2f}`\n"
+                f"💼 *Business:* In `${b_inc:,.2f}` | Out `${b_exp:,.2f}`\n"
+                f"🏦 *Savings:* In `${s_inc:,.2f}` | Out `${s_exp:,.2f}`\n\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"📈 *Total Income:* `${tot_inc:,.2f}`\n"
+                f"📉 *Total Spent:* `${tot_exp:,.2f}`\n"
+                f"💰 *Net Balance:* `${tot_inc - tot_exp:,.2f}`"
             )
             await update.message.reply_text(summary_msg, parse_mode='Markdown')
             
         except Exception as e:
-            await update.message.reply_text("⚠️ No data yet!")
+            await update.message.reply_text(f"⚠️ Error: {e}")
         return
-
 # Intercept the Crypto Portfolio button
     if text == "📈 Crypto Portfolio":
         loading_message = await update.message.reply_text("🔄 *Syncing with market data...*", parse_mode='Markdown')

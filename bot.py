@@ -344,24 +344,24 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
                 cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
             
-            # Fetch Goals
-            cursor.execute("SELECT name, amount FROM goals WHERE user_id = ?", (user_id,))
-            goals = cursor.fetchall()
+                # Fetch Goals
+                cursor.execute("SELECT name, amount FROM goals WHERE user_id = ?", (user_id,))
+                goals = cursor.fetchall()
             
-            # Calculate what is actually in the Savings Wallet
-            cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'income' AND wallet = 'Savings'", (user_id,))
-            sav_in = cursor.fetchone()[0] or 0.0
-            cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'expense' AND wallet = 'Savings'", (user_id,))
-            sav_out = cursor.fetchone()[0] or 0.0
-            curr_savings = sav_in - sav_out
-            conn.close()
+                # Calculate what is actually in the Savings Wallet
+                cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'income' AND wallet = 'Savings'", (user_id,))
+                sav_in = cursor.fetchone()[0] or 0.0
+                cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'expense' AND wallet = 'Savings'", (user_id,))
+                sav_out = cursor.fetchone()[0] or 0.0
+                curr_savings = sav_in - sav_out
+                conn.close()
             
             if not goals:
-                await update.message.reply_text(
-                    f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n"
-                    "⚠️ You have no active goals.\n"
-                    "To add one, just type a message like this:\n`Goal 500 New Laptop`", 
-                    parse_mode='Markdown'
+               await update.message.reply_text(
+                     f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n"
+                     "⚠️ You have no active goals.\n"
+                     "To add one, just type a message like this:\n`Goal 500 New Laptop`", 
+                     parse_mode='Markdown'
                 )
                 return
                 

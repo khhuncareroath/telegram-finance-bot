@@ -328,42 +328,42 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = update.message.text.strip()
         # 1. Show Goal Progress
         if text == "🎯 Savings Goals" or text == "Savings Goals":
-        try:
-            user_id = update.message.from_user.id
-            import sqlite3
-            conn = sqlite3.connect('finance.db')
-            cursor = conn.cursor()
+        	try:
+            	user_id = update.message.from_user.id
+            	import sqlite3
+            	conn = sqlite3.connect('finance.db')
+            	cursor = conn.cursor()
             
-            # Anti-Crash: Ensure tables exist before trying to read them
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS transactions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER, amount REAL, category TEXT,
-                    type TEXT, wallet TEXT,
-                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)
-            """)
-            cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
+            	# Anti-Crash: Ensure tables exist before trying to read them
+            	cursor.execute("""
+                	CREATE TABLE IF NOT EXISTS transactions (
+                    	id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    	user_id INTEGER, amount REAL, category TEXT,
+                    	type TEXT, wallet TEXT,
+                    	timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)
+            	""")
+            	cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
             
-            # Fetch Goals
-            cursor.execute("SELECT name, amount FROM goals WHERE user_id = ?", (user_id,))
-            goals = cursor.fetchall()
+            	# Fetch Goals
+            	cursor.execute("SELECT name, amount FROM goals WHERE user_id = ?", (user_id,))
+            	goals = cursor.fetchall()
             
-            # Calculate what is actually in the Savings Wallet
-            cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'income' AND wallet = 'Savings'", (user_id,))
-            sav_in = cursor.fetchone()[0] or 0.0
-            cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'expense' AND wallet = 'Savings'", (user_id,))
-            sav_out = cursor.fetchone()[0] or 0.0
-            curr_savings = sav_in - sav_out
-            conn.close()
+            	# Calculate what is actually in the Savings Wallet
+            	cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'income' AND wallet = 'Savings'", (user_id,))
+            	sav_in = cursor.fetchone()[0] or 0.0
+            	cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'expense' AND wallet = 'Savings'", (user_id,))
+            	sav_out = cursor.fetchone()[0] or 0.0
+            	curr_savings = sav_in - sav_out
+            	conn.close()
             
             	if not goals:
-                	await update.message.reply_text(
-                    	f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n"
-                    	"⚠️ You have no active goals.\n"
-                    	"To add one, just type a message like this:\n`Goal 500 New Laptop`",
-                    	parse_mode='Markdown'
-                	)
-                	return
+                await update.message.reply_text(
+                    f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n"
+                    "⚠️ You have no active goals.\n"
+                    "To add one, just type a message like this:\n`Goal 500 New Laptop`",
+                    parse_mode='Markdown'
+                )
+                return
                 
             msg = f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n🎯 *Your Goals:*\n"
             for name, amount in goals:
@@ -371,6 +371,9 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 msg += f"• *{name}*: `${amount:,.2f}` ({progress:.1f}% funded)\n"
                 
             await update.message.reply_text(msg, parse_mode='Markdown')
+        except Exception as e:
+            await update.message.reply_text(f"⚠️ Error: {e}")
+            return
         
         # 2. Command to Save a New Goal
         if text.lower().startswith("goal "):

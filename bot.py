@@ -356,7 +356,7 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 curr_savings = sav_in - sav_out
                 conn.close()
             
-                            if not goals:
+                if not goals:
                 		await update.message.reply_text(
                     		    f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n"
                     		    "⚠️ You have no active goals.\n"

@@ -358,13 +358,13 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 conn.close()
 
                 if not goals:
-        	    await update.message.reply_text(
-            		f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n"
-            		"⚠️ You have no active goals.\n"
-            		"To add one, just type a message like this:\n`Goal 500 New Laptop`",
-            		parse_mode='Markdown'
-        	    )
-        	    return
+                    await update.message.reply_text(
+                        f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n"
+                        "⚠️ You have no active goals.\n"
+                        "To add one, just type a message like this:\n`Goal 500 New Laptop`",
+                        parse_mode='Markdown'
+                    )
+                    return
 
     		msg = f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n🎯 *Your Goals:*\n"
     		for name, amount in goals:

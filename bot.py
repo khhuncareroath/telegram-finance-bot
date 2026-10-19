@@ -254,7 +254,7 @@ async def portfolio_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             icon = "🟢" if pnl >= 0 else "🔴"
             message += f"*{ticker}* (Amount: {amount})\n"
-            message += f"Avg Buy Price: ${avg_buy_price:.2f} \vert{} Current Price:${current_price:.2f}\n"
+            message += "Avg Buy Price: $" + str(round(avg_buy_price, 2)) + " | Current Price: $" + str(round(current_price, 2)) + "\n"
             message += f"{icon} PnL: ${pnl:.2f} ({pnl_percent:.2f}%)\n\n"
 
     message += f"*Total Net PnL:* ${total_profit:.2f}"

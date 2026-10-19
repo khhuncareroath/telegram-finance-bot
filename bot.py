@@ -323,15 +323,16 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             msg = f"🎯 *Save to Goal:*\nYou chose to save `${float(amount):,.2f}`.\nTo log this, reply with the goal name like this:\n`Goal {amount} Laptop`"
             await query.edit_message_text(msg, parse_mode='Markdown')
             return    
-async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         text = update.message.text.strip()
+        
         # 1. Show Goal Progress
-    if text == "🎯 Savings Goals" or text == "Savings Goals":
-        try:
-            user_id = update.message.from_user.id
-            conn = sqlite3.connect('finance.db')
-            cursor = conn.cursor()
+        if text == "🎯 Savings Goals" or text == "Savings Goals":
+            try:
+                user_id = update.message.from_user.id
+                conn = sqlite3.connect('finance.db')
+                cursor = conn.cursor()
             
             # Anti-Crash: Ensure tables exist before trying to read them
             cursor.execute("""

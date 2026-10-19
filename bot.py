@@ -579,6 +579,32 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         await update.message.reply_text("💡 _Commands: `/export`, `/excel`, `/pdf`_\n\n⚙️ **Settings Controls:**", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
 
+    # 5.5 Handle Number Inputs (Expense/Income Logging)
+    elif is_number:
+        amount = float(parts[0])
+        category = parts[1] if len(parts) > 1 else "Misc"
+        
+        keyboard = [
+            [
+                InlineKeyboardButton("🍔 Food", callback_data=f"exp_{amount}_{category}"),
+                InlineKeyboardButton("🚕 Transport", callback_data=f"exp_{amount}_{category}")
+            ],
+            [
+                InlineKeyboardButton("🛍️ Shopping", callback_data=f"exp_{amount}_{category}"),
+                InlineKeyboardButton("💵 Income", callback_data=f"inc_{amount}")
+            ],
+            [
+                InlineKeyboardButton("📈 Buy Asset", callback_data=f"buy_{amount}_menu"),
+                InlineKeyboardButton("🎯 Save to Goal", callback_data=f"goaladd_{amount}_menu")
+            ]
+        ]
+        
+        await update.message.reply_text(
+            f"You entered `${amount:,.2f}` for *{category}*.\nChoose an action:", 
+            reply_markup=InlineKeyboardMarkup(keyboard), 
+            parse_mode='Markdown'
+        )
+    
     # 6. Fallback AI Advisor (triggers if text is not a command or a numeric log)
     elif not is_number:
         if "YOUR_GEMINI_API_KEY_HERE" in GEMINI_API_KEY:

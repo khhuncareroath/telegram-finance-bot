@@ -357,25 +357,25 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 curr_savings = sav_in - sav_out
                 conn.close()
 
-    		if not goals:
-        	    await update.message.reply_text(
-            		f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n"
-            		"⚠️ You have no active goals.\n"
-            		"To add one, just type a message like this:\n`Goal 500 New Laptop`",
-            		parse_mode='Markdown'
-        		)
-        		return
+                    if not goals:
+        	            await update.message.reply_text(
+            		        f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n"
+            		        "⚠️ You have no active goals.\n"
+            		        "To add one, just type a message like this:\n`Goal 500 New Laptop`",
+            		        parse_mode='Markdown'
+        	            )
+        	            return
 
-    		msg = f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n🎯 *Your Goals:*\n"
-    		for name, amount in goals:
-        	    progress = min(100, (curr_savings / amount) * 100) if amount > 0 else 0
-        	    msg += f"• *{name}*: `${amount:,.2f}` ({progress:.1f}% funded)\n"
+    		        msg = f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n🎯 *Your Goals:*\n"
+    		        for name, amount in goals:
+        	        progress = min(100, (curr_savings / amount) * 100) if amount > 0 else 0
+        	        msg += f"• *{name}*: `${amount:,.2f}` ({progress:.1f}% funded)\n"
 
-    		await update.message.reply_text(msg, parse_mode='Markdown')
+    		        await update.message.reply_text(msg, parse_mode='Markdown')
 
-	    except Exception as e:
-                await update.message.reply_text(f"⚠️ Error: {e}")
-                return
+	            except Exception as e:
+                            await update.message.reply_text(f"⚠️ Error: {e}")
+                            return
     		# 2. Command to Save a New Goal
     		if text.lower().startswith("goal "):
         	    try:

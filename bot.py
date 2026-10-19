@@ -368,10 +368,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     		msg = f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n🎯 *Your Goals:*\n"
     		for name, amount in goals:
-        	progress = min(100, (curr_savings / amount) * 100) if amount > 0 else 0
-        	msg += f"• *{name}*: `${amount:,.2f}` ({progress:.1f}% funded)\n"
+        	    progress = min(100, (curr_savings / amount) * 100) if amount > 0 else 0
+        	    msg += f"• *{name}*: `${amount:,.2f}` ({progress:.1f}% funded)\n"
 
-    		    await update.message.reply_text(msg, parse_mode='Markdown')
+    		await update.message.reply_text(msg, parse_mode='Markdown')
 
 	           
     		# 2. Command to Save a New Goal

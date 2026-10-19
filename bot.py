@@ -357,7 +357,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 curr_savings = sav_in - sav_out
                 conn.close()
 
-                    if not goals:
+                        if not goals:
         	            await update.message.reply_text(
             		        f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n"
             		        "⚠️ You have no active goals.\n"
@@ -373,9 +373,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     		        await update.message.reply_text(msg, parse_mode='Markdown')
 
-	            except Exception as e:
-                            await update.message.reply_text(f"⚠️ Error: {e}")
-                            return
+	           
     		# 2. Command to Save a New Goal
     		if text.lower().startswith("goal "):
         	    try:

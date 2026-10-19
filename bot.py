@@ -686,7 +686,7 @@ if __name__ == '__main__':
     t.daemon = True
     t.start()
     
-    app = ApplicationBuilder().token(BOT_TOKEN).connect_timeout(30.0).read_timeout(30.0).build()
+    app = ApplicationBuilder().token(BOT_TOKEN).connect_timeout(30.0).read_timeout(30.0).post_init(setup_bot_menu).build()
     
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("guide", guide_command))
@@ -700,7 +700,7 @@ if __name__ == '__main__':
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_clicks))
     
     app.add_handler(CallbackQueryHandler(button_handler))
-    app.post_init = setup_bot_menu
+
     
     print("Multi-User Multi-Wallet Bot is running!")
     app.run_polling()

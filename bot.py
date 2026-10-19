@@ -366,40 +366,40 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
                     return
 
-    		msg = f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n🎯 *Your Goals:*\n"
-    		for name, amount in goals:
-        	    progress = min(100, (curr_savings / amount) * 100) if amount > 0 else 0
-        	    msg += f"• *{name}*: `${amount:,.2f}` ({progress:.1f}% funded)\n"
+            msg = f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n🎯 *Your Goals:*\n"
+            for name, amount in goals:
+                progress = min(100, (curr_savings / amount) * 100) if amount > 0 else 0
+                msg += f"• *{name}*: `${amount:,.2f}` ({progress:.1f}% funded)\n"
 
-    		await update.message.reply_text(msg, parse_mode='Markdown')
+            await update.message.reply_text(msg, parse_mode='Markdown')
 
-	           
-    		# 2. Command to Save a New Goal
-    		if text.lower().startswith("goal "):
-        	    try:
-            		user_id = update.message.from_user.id
-            		parts = text.split(" ", 2)
-            		amount = float(parts[1])
-            		name = parts[2]
+               
+            # 2. Command to Save a New Goal
+            if text.lower().startswith("goal "):
+                try:
+                    user_id = update.message.from_user.id
+                    parts = text.split(" ", 2)
+                    amount = float(parts[1])
+                    name = parts[2]
             
-            		conn = sqlite3.connect('finance.db')
-            		cursor = conn.cursor()
-            		cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
-            		cursor.execute("INSERT INTO goals (user_id, amount, name) VALUES (?, ?, ?)", (user_id, amount, name))
-            		conn.commit()
-            		conn.close()
+                    conn = sqlite3.connect('finance.db')
+                    cursor = conn.cursor()
+                    cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
+                    cursor.execute("INSERT INTO goals (user_id, amount, name) VALUES (?, ?, ?)", (user_id, amount, name))
+                    conn.commit()
+                    conn.close()
 
-            		await update.message.reply_text(f"🎯 *Goal Saved:* `${amount:,.2f}` for *{name}*", parse_mode='Markdown')
+                    await update.message.reply_text(f"🎯 *Goal Saved:* `${amount:,.2f}` for *{name}*", parse_mode='Markdown')
             
-        	    except (IndexError, ValueError):
-            		await update.message.reply_text(
-                	    "⚠️ Please use the correct format:\n`Goal 500 New Laptop`",
-                	    parse_mode='Markdown'
-            		)
-            		return
-        	    except Exception as e:
-            		await update.message.reply_text(f"⚠️ Error: {e}")
-            		return
+                except (IndexError, ValueError):
+                    await update.message.reply_text(
+                        "⚠️ Please use the correct format:\n`Goal 500 New Laptop`",
+                        parse_mode='Markdown'
+                    )
+                    return
+                except Exception as e:
+                    await update.message.reply_text(f"⚠️ Error: {e}")
+                    return
 
     # Intercept the Quick Summary button
     if text == "📊 Quick Summary":

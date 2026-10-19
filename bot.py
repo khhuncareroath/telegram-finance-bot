@@ -374,49 +374,49 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         	
         # 2. Command to Save a New Goal
         if text.lower().startswith("goal "):
-        try:
-            user_id = update.message.from_user.id
-            parts = text.split(" ", 2)
-            amount = float(parts[1])
-            name = parts[2]
+            try:
+                user_id = update.message.from_user.id
+                parts = text.split(" ", 2)
+                amount = float(parts[1])
+                name = parts[2]
             
-            conn = sqlite3.connect('finance.db')
-            cursor = conn.cursor()
-            cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
-            cursor.execute("INSERT INTO goals (user_id, amount, name) VALUES (?, ?, ?)", (user_id, amount, name))
-            conn.commit()
-            conn.close()
+                conn = sqlite3.connect('finance.db')
+                cursor = conn.cursor()
+                cursor.execute("CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, name TEXT)")
+                cursor.execute("INSERT INTO goals (user_id, amount, name) VALUES (?, ?, ?)", (user_id, amount, name))
+                conn.commit()
+                conn.close()
 
-            await update.message.reply_text(f"🎯 *Goal Saved:* `${amount:,.2f}` for *{name}*", parse_mode='Markdown')
+                await update.message.reply_text(f"🎯 *Goal Saved:* `${amount:,.2f}` for *{name}*", parse_mode='Markdown')
             
-        except (IndexError, ValueError):
-            await update.message.reply_text(
+            except (IndexError, ValueError):
+                await update.message.reply_text(
                 "⚠️ Please use the correct format:\n`Goal 500 New Laptop`",
                 parse_mode='Markdown'
-            )
-            return
-        except Exception as e:
-            await update.message.reply_text(f"⚠️ Error: {e}")
-            return
+                )
+                return
+            except Exception as e:
+                await update.message.reply_text(f"⚠️ Error: {e}")
+                return
                 
         # Intercept the Crypto Portfolio button
-    if text == "📈 Crypto Portfolio":
-        loading_message = await update.message.reply_text("🔄 *Syncing with market data...*", parse_mode='Markdown')
-        # (Your existing crypto logic will go here later!)
-        return
+        if text == "📈 Crypto Portfolio":
+            loading_message = await update.message.reply_text("🔄 *Syncing with market data...*", parse_mode='Markdown')
+            # (Your existing crypto logic will go here later!)
+            return
     
-    clean_text = text.lstrip("+-").strip()
-    first_word = clean_text.split()[0] if clean_text else ""
-    is_number = False
-    try:
-        float(first_word)
-        is_number = True
-    except ValueError:
+        clean_text = text.lstrip("+-").strip()
+        first_word = clean_text.split()[0] if clean_text else ""
         is_number = False
+        try:
+            float(first_word)
+            is_number = True
+        except ValueError:
+            is_number = False
 
-    if is_number and len(clean_text.split()) == 1:
-        amount = float(first_word)
-        keyboard = [
+        if is_number and len(clean_text.split()) == 1:
+            amount = float(first_word)
+            keyboard = [
             [InlineKeyboardButton("🍔 Meals", callback_data=f"exp_{amount}_Meals"), InlineKeyboardButton("🧋 Coffee", callback_data=f"exp_{amount}_Coffee")],
             [InlineKeyboardButton("🚕 Transport", callback_data=f"exp_{amount}_Transport"), InlineKeyboardButton("🛒 Convenience", callback_data=f"exp_{amount}_Convenience")],
             [InlineKeyboardButton("💰 Log as Income", callback_data=f"inc_{amount}")],
@@ -429,7 +429,6 @@ async def handle_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Intercept the Quick Summary button
     if text == "📊 Quick Summary":
-        import sqlite3
         try:
             conn = sqlite3.connect('finance.db')
             cursor = conn.cursor()

@@ -348,34 +348,34 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 # Fetch Goals
                 cursor.execute("SELECT name, amount FROM goals WHERE user_id = ?", (user_id,))
                 goals = cursor.fetchall()
-            
+    
                 # Calculate what is actually in the Savings Wallet
-        cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'income' AND wallet = 'Savings'", (user_id,))
-        sav_in = cursor.fetchone()[0] or 0.0
-        cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'expense' AND wallet = 'Savings'", (user_id,))
-        sav_out = cursor.fetchone()[0] or 0.0
-        curr_savings = sav_in - sav_out
-        conn.close()
+                cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'income' AND wallet = 'Savings'", (user_id,))
+                sav_in = cursor.fetchone()[0] or 0.0
+                cursor.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'expense' AND wallet = 'Savings'", (user_id,))
+                sav_out = cursor.fetchone()[0] or 0.0
+                curr_savings = sav_in - sav_out
+                conn.close()
 
-        if not goals:
-            await update.message.reply_text(
-                f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n"
-                "⚠️ You have no active goals.\n"
-                "To add one, just type a message like this:\n`Goal 500 New Laptop`",
-                parse_mode='Markdown'
-            )
-            return
+            if not goals:
+                await update.message.reply_text(
+                    f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n"
+                    "⚠️ You have no active goals.\n"
+                    "To add one, just type a message like this:\n`Goal 500 New Laptop`",
+                    parse_mode='Markdown'
+                )
+                return
 
-        msg = f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n🎯 *Your Goals:*\n"
-        for name, amount in goals:
-            progress = min(100, (curr_savings / amount) * 100) if amount > 0 else 0
-            msg += f"• *{name}*: `${amount:,.2f}` ({progress:.1f}% funded)\n"
+            msg = f"🏦 *Savings Balance:* `${curr_savings:,.2f}`\n\n🎯 *Your Goals:*\n"
+            for name, amount in goals:
+                progress = min(100, (curr_savings / amount) * 100) if amount > 0 else 0
+                msg += f"• *{name}*: `${amount:,.2f}` ({progress:.1f}% funded)\n"
 
-        await update.message.reply_text(msg, parse_mode='Markdown')
+            await update.message.reply_text(msg, parse_mode='Markdown')
 
-    except Exception as e:
-        await update.message.reply_text(f"⚠️ Error: {e}")
-        return
+            except Exception as e:
+                await update.message.reply_text(f"⚠️ Error: {e}")
+                return
                
             # 2. Command to Save a New Goal
             if text.lower().startswith("goal "):

@@ -155,14 +155,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [
-        [InlineKeyboardButton("📅 Open Calendar", callback_data='action_calendar'),
-         InlineKeyboardButton("📊 Weekly/Monthly Stats", callback_data='action_stats')],
-        [InlineKeyboardButton("📖 Read Quick Guide", callback_data='action_guide')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
     welcome_text = "🚀 *Welcome to Manager Bot!*\nWhat would you like to check today?"
-    await update.message.reply_text(welcome_text, reply_markup=reply_markup, parse_mode='Markdown')
+    
+    keyboard = [
+        [KeyboardButton("📊 Quick Summary"), KeyboardButton("📈 Crypto Portfolio")],
+        [KeyboardButton("🎯 Savings Goals"), KeyboardButton("⚙️ Settings & Tools")],
+        [KeyboardButton("📅 Open Calendar"), KeyboardButton("📖 Read Quick Guide")]
+    ]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    
+    await update.message.reply_text(
+        welcome_text, 
+        reply_markup=reply_markup, 
+        parse_mode='Markdown'
+    )
 
 async def guide_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     guide_text = "📖 *Quick Start Guide*\nLogging your daily spending is fast. Just type the amount followed by the description.\n*Examples:*\n🍜 `3.50 Noodle House`\n🚕 `4 PassApp`"

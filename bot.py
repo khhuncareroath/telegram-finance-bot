@@ -323,12 +323,13 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)"
             )
             
-            cursor.execute(
-                "INSERT INTO transactions (user_id, amount, category, type, wallet) VALUES (?, ?, ?, 'expense', ?)", 
-                (user_id, amount, category, wallet)
-            )
-            conn.commit()
-            conn.close()
+            # Send data to Supabase instead of SQLite
+            supabase.table("transactions").insert({
+                "amount": amount,
+                "category": category,
+                "description": f"Telegram via {wallet} Wallet",
+                "is_asset": False
+            }).execute()
             
             success_msg = f"✅ *Success:* Logged `${amount:,.2f}` for {category} [*{wallet} Wallet*]."
             await query.edit_message_text(success_msg, parse_mode='Markdown')

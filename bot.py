@@ -25,19 +25,7 @@ import os
 SUPABASE_URL = "https://suedeinngqoryxpoizix.supabase.co"
 SUPABASE_KEY = "sb_publishable_l6R_L6g_Dr4J2ZVlMMPJuw_OPSpi0wS"
 
-try:
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    print("Supabase engine armed and ready!")
-    # Send a test transaction to Supabase
-    supabase.table("transactions").insert({
-        "user_id": 123456789, 
-        "amount": 2.50,
-        "category": "Drinks",
-        "description": "Test setup for Kru Care!"
-    }).execute()
-    print("Test transaction sent!")
-except Exception as e:
-    print(f"Supabase connection failed: {e}")
+
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "YOUR_TELEGRAM_TOKEN_HERE")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
 

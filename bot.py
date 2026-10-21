@@ -17,7 +17,19 @@ from google import genai
 from telegram import BotCommand, InlineKeyboardButton, InlineKeyboardMarkup, Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
+from supabase import create_client, Client
+import os
 
+# Get Supabase Keys
+# (It's safer to use os.environ later, but for testing we can paste them here temporarily)
+SUPABASE_URL = "https://suedeinngqoryxpoizix.supabase.co"
+SUPABASE_KEY = "sb_publishable_l6R_L6g_Dr4J2ZVlMMPJuw_OPSpi0wS"
+
+try:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    print("Supabase engine armed and ready!")
+except Exception as e:
+    print(f"Supabase connection failed: {e}")
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "YOUR_TELEGRAM_TOKEN_HERE")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
 

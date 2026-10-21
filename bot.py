@@ -24,7 +24,7 @@ import os
 # (It's safer to use os.environ later, but for testing we can paste them here temporarily)
 SUPABASE_URL = "https://suedeinngqoryxpoizix.supabase.co"
 SUPABASE_KEY = "sb_publishable_l6R_L6g_Dr4J2ZVlMMPJuw_OPSpi0wS"
-
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "YOUR_TELEGRAM_TOKEN_HERE")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")

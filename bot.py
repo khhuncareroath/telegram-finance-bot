@@ -30,7 +30,7 @@ try:
     print("Supabase engine armed and ready!")
     # Send a test transaction to Supabase
     supabase.table("transactions").insert({
-        "user_id": "00000000-0000-0000-0000-000000000000", 
+        "user_id": 123456789, 
         "amount": 2.50,
         "category": "Drinks",
         "description": "Test setup for Kru Care!"

@@ -29,13 +29,13 @@ try:
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
     print("Supabase engine armed and ready!")
     # Send a test transaction to Supabase
-        supabase.table("transactions").insert({
-            "user_id": "00000000-0000-0000-0000-000000000000", 
-            "amount": 2.50,
-            "category": "Drinks",
-            "description": "Test setup for Kru Care!"
-        }).execute()
-        print("Test transaction sent!")
+    supabase.table("transactions").insert({
+        "user_id": "00000000-0000-0000-0000-000000000000", 
+        "amount": 2.50,
+        "category": "Drinks",
+        "description": "Test setup for Kru Care!"
+    }).execute()
+    print("Test transaction sent!")
 except Exception as e:
     print(f"Supabase connection failed: {e}")
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "YOUR_TELEGRAM_TOKEN_HERE")
